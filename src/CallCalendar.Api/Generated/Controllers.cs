@@ -29,7 +29,7 @@ namespace CallCalendar.Api
     {
 
         /// <remarks>
-        /// Создать запись (T6/T8). Старт вне сетки/окна или некорректные поля — 400; нет такого типа — 404; слот занят (пересечение T2) — 409.
+        /// Создать запись (T6/T8). Старт вне сетки/рабочих часов или некорректные поля — 400; нет такого типа — 404; слот занят (пересечение T2) — 409.
         /// </remarks>
 
         /// <returns>The request has succeeded and a new resource has been created as a result.</returns>
@@ -57,7 +57,7 @@ namespace CallCalendar.Api
         }
 
         /// <remarks>
-        /// Создать запись (T6/T8). Старт вне сетки/окна или некорректные поля — 400; нет такого типа — 404; слот занят (пересечение T2) — 409.
+        /// Создать запись (T6/T8). Старт вне сетки/рабочих часов или некорректные поля — 400; нет такого типа — 404; слот занят (пересечение T2) — 409.
         /// </remarks>
         /// <returns>The request has succeeded and a new resource has been created as a result.</returns>
         [Microsoft.AspNetCore.Mvc.HttpPost, Microsoft.AspNetCore.Mvc.Route("api/bookings")]
@@ -101,7 +101,7 @@ namespace CallCalendar.Api
         System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.ActionResult<EventType>> CreateAsync(NewEventType body);
 
         /// <remarks>
-        /// Свободные старты слотов типа на дату — список wall-clock datetime «2026-10-21T09:00» (T8). Сервер считает один раз: шаг сетки = durationMinutes, якорь 09:00, старты с start+D&lt;=18:00 (T4); окно 14 календарных дней включая сегодня, сегодняшние старты строго после now по MSK (T3); свободен = нет пересечения полуоткрытых интервалов с записями (T2). Нет такого типа — 404.
+        /// Свободные старты слотов типа на дату — список wall-clock datetime «2026-10-21T09:00» (T8). Сервер считает один раз: шаг сетки = durationMinutes, якорь 09:00, старты с start+D&lt;=18:00 (T4); любая будущая дата, сегодняшние старты строго после now по MSK (T3); свободен = нет пересечения полуоткрытых интервалов с записями (T2). Нет такого типа — 404.
         /// </remarks>
 
 
@@ -145,7 +145,7 @@ namespace CallCalendar.Api
         }
 
         /// <remarks>
-        /// Свободные старты слотов типа на дату — список wall-clock datetime «2026-10-21T09:00» (T8). Сервер считает один раз: шаг сетки = durationMinutes, якорь 09:00, старты с start+D&lt;=18:00 (T4); окно 14 календарных дней включая сегодня, сегодняшние старты строго после now по MSK (T3); свободен = нет пересечения полуоткрытых интервалов с записями (T2). Нет такого типа — 404.
+        /// Свободные старты слотов типа на дату — список wall-clock datetime «2026-10-21T09:00» (T8). Сервер считает один раз: шаг сетки = durationMinutes, якорь 09:00, старты с start+D&lt;=18:00 (T4); любая будущая дата, сегодняшние старты строго после now по MSK (T3); свободен = нет пересечения полуоткрытых интервалов с записями (T2). Нет такого типа — 404.
         /// </remarks>
         /// <returns>The request has succeeded.</returns>
         [Microsoft.AspNetCore.Mvc.HttpGet, Microsoft.AspNetCore.Mvc.Route("api/event-types/{id}/availability")]
