@@ -17,12 +17,15 @@ public class BookingWindowTests
     }
 
     [Fact]
-    public async Task Far_future_booking_is_accepted()
+public async Task Far_future_booking_is_accepted()
     {
+        // Arrange
         using var app = new ApiTestApp();
 
+        // Act
         var response = await app.BookAsync(ApiTestApp.ThirtyMinTypeId, ApiTestApp.Day(30), 10, 0);
 
+        // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
     }
 
