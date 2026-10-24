@@ -1,0 +1,50 @@
+name: opencode-triage
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Run OpenCode triage
+        uses: anomalyco/opencode/github@latest
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        with:
+          model: opencode/deepseek-v4-pro
+          prompt: |
+            Ты триажишь новую задачу в репозитории CallCalendar
+            (Blazor Web App + ASP.NET Core API).
+
+            Прочитай заголовок, описание и все комментарии issue.
+            Не меняй код, не создавай ветки и не открывай pull request —
+            только оставь один комментарий к issue.
+
+            В комментарии:
+            1. Кратко сформулируй суть проблемы или жалобы пользователя.
+            2. Найди причину в коде. Укажи конкретные файлы и, где возможно,
+               строки: src/CallCalendar.Web/..., src/CallCalendar.Api/...,
+               src/CallCalendar.Client/..., tests/....
+            3. Перечисли затронутые части: UI, API, контракт, тесты, стили.
+            4. Предложи путь исправления: что изменить и в каком порядке.
+               Не реализуй его.
+            5. Добавь раздел «Что считается исправлением» — проверяемые
+               критерии приёмки, по которым задачу можно взять в работу:
+               ожидаемое поведение, граничные случаи, что должно остаться
+               рабочим, какие тесты добавить.
+            6. Если в треде уже есть разбор — не повторяй его, а дополни
+               и преврати в постановку. Если данных не хватает — перечисли
+               конкретные вопросы к автору.
+
+            Пиши по-русски, структурированно и без общих слов.
