@@ -23,25 +23,28 @@ h1 {
         margin: 0;
     }
 
-.crumbs {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
+.booking-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1.5rem;
+    align-items: start;
 }
 
-.crumb-back {
-    background: none;
-    border: 1px solid #cfd6df;
-    border-radius: 10px;
-    padding: 0.35rem 0.8rem;
+.column {
+    min-width: 0;
+}
+
+    .column h2 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--ink);
+        margin: 0 0 1rem;
+    }
+
+.column-hint {
     color: var(--muted);
-    cursor: pointer;
-}
-
-.crumb-label {
-    font-weight: 700;
-    color: var(--ink);
+    font-size: 0.95rem;
+    margin: 0;
 }
 
 .notice {
