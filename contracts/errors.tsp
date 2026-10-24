@@ -20,7 +20,7 @@ model ProblemDetails {
 }
 
 /// 400 — валидация запроса (T8 Q3): пустые name/email, неверный формат email,
-/// durationMinutes <= 0, старт вне сетки/окна.
+/// durationMinutes <= 0, старт вне сетки/рабочих часов.
 alias BadRequest = {
   @statusCode statusCode: 400;
   @header("Content-Type") contentType: "application/problem+json";

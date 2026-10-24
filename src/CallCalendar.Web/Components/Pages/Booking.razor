@@ -109,15 +109,34 @@
                     }
                     else
                     {
-                        <div class="choice-grid dates">
-                            @foreach (var day in days!)
-                            {
-                                <button class="choice day @(day.Equals(selectedDay) ? "selected" : "")"
-                                        @onclick="() => ChooseDateAsync(day)">
-                                    <span class="choice-title">@day.ToString("dd.MM")</span>
-                                    <span class="choice-note">@WeekdayShort(day)</span>
-                                </button>
-                            }
+                        <div class="calendar">
+                            <div class="calendar-nav">
+                                <button type="button" class="nav-arrow" aria-label="Предыдущий месяц" @onclick="PrevMonth">‹</button>
+                                <span class="calendar-month">@MonthTitle</span>
+                                <button type="button" class="nav-arrow" aria-label="Следующий месяц" @onclick="NextMonth">›</button>
+                            </div>
+                            <div class="calendar-grid">
+                                @foreach (var name in weekdayNames)
+                                {
+                                    <span class="weekday">@name</span>
+                                }
+                                @foreach (var cell in CalendarCells())
+                                {
+                                    if (cell is null)
+                                    {
+                                        <span class="day empty"></span>
+                                    }
+                                    else
+                                    {
+                                        <button type="button"
+                                                class="day @(cell.Value.Date == today ? "today" : "") @(cell.Value.Date == selectedDay.Date ? "selected" : "")"
+                                                disabled="@IsPast(cell.Value)"
+                                                @onclick="() => ChooseDateAsync(cell.Value)">
+                                            <span>@cell.Value.Day</span>
+                                        </button>
+                                    }
+                                }
+                            </div>
                         </div>
                     }
                 </section>
@@ -173,12 +192,16 @@
 
     private static readonly string[] weekdayNames = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"];
 
+    private static readonly string[] monthNames =
+        ["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"];
+
     private BookingStep step = BookingStep.Select;
     private string? apiUnavailable;
     private List<EventType>? types;
     private EventType? selectedType;
-    private List<DateTime>? days;
     private DateTime selectedDay;
+    private DateTime today;
+    private DateTime displayedMonth;
     private List<string>? slots;
     private bool slotsLoading;
     private string? selectedSlot;
@@ -196,6 +219,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        today = MskClock.Now().Date;
         try
         {
             types = await Api.Api.EventTypes.GetAsync();
@@ -205,8 +229,6 @@
             apiUnavailable = UnavailableMessage;
         }
     }
-
-    private static string WeekdayShort(DateTime day) => weekdayNames[((int)day.DayOfWeek + 6) % 7];
 
     private string selectedDayText => selectedDay.ToString("dd.MM.yyyy");
 
@@ -220,6 +242,36 @@
         _ => wallClock,
     };
 
+    private string MonthTitle => $"{monthNames[displayedMonth.Month - 1]} {displayedMonth.Year}";
+
+    /// Ячейки месяца: пустые до первого дня («понедельник — первая колонка»), затем дни,
+    /// в конце — пустые до целой недели.
+    private List<DateTime?> CalendarCells()
+    {
+        var first = new DateTime(displayedMonth.Year, displayedMonth.Month, 1);
+        var leadingBlanks = ((int)first.DayOfWeek + 6) % 7;
+        var daysInMonth = DateTime.DaysInMonth(displayedMonth.Year, displayedMonth.Month);
+
+        var cells = Enumerable.Repeat<DateTime?>(null, leadingBlanks).ToList();
+        for (var day = 1; day <= daysInMonth; day++)
+        {
+            cells.Add(new DateTime(displayedMonth.Year, displayedMonth.Month, day));
+        }
+
+        while (cells.Count % 7 != 0)
+        {
+            cells.Add(null);
+        }
+
+        return cells;
+    }
+
+    private bool IsPast(DateTime day) => day.Date < today;
+
+    private void PrevMonth() => displayedMonth = displayedMonth.AddMonths(-1);
+
+    private void NextMonth() => displayedMonth = displayedMonth.AddMonths(1);
+
     private void ChooseType(EventType type)
     {
         selectedType = type;
@@ -229,12 +281,11 @@
         conflictNotice = null;
         globalNotice = null;
         formError = null;
-        // Окно записи: 14 календарных дней, включая сегодня (T3). Границу «сегодня» считаем по MSK,
-        // как и сервер (T8 Q2); если дата «постарела» за время сессии — сервер вернёт пустой список.
-        days = Enumerable.Range(0, 14).Select(i => MskClock.Now().Date.AddDays(i)).ToList();
+        // Показываем месяц «сегодня» (MSK); навигация в будущие/прошедшие месяцы свободна.
+        displayedMonth = new DateTime(today.Year, today.Month, 1);
     }
 
-    /// Wall-clock по Москве — зеркалит серверный MskClock/BookingWindow (T3/T8):
+    /// Wall-clock по Москве — зеркалит серверный MskClock (T8):
     /// зона зафиксирована контрактом; Web не ссылается на Api, поэтому helper свой.
     private static class MskClock
     {
@@ -265,7 +316,6 @@
             // тип события мог исчезнуть из виду — возвращаем к его выбору с пояснением
             globalNotice = "Этот тип события больше недоступен — выберите другой.";
             selectedType = null;
-            days = null;
             slots = null;
             slotsLoading = false;
             return;
@@ -331,7 +381,6 @@
         {
             globalNotice = "Этот тип события больше недоступен — выберите другой.";
             selectedType = null;
-            days = null;
             slots = null;
             step = BookingStep.Select;
         }
@@ -356,7 +405,7 @@
     private void Restart()
     {
         selectedType = null;
-        days = null;
+        displayedMonth = default;
         selectedDay = default;
         slots = null;
         selectedSlot = null;

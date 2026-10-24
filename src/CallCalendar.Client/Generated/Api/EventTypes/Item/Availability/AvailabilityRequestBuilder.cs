@@ -34,7 +34,7 @@ namespace CallCalendar.Client.Api.EventTypes.Item.Availability
         {
         }
         /// <summary>
-        /// Свободные старты слотов типа на дату — список wall-clock datetime «2026-10-21T09:00» (T8). Сервер считает один раз: шаг сетки = durationMinutes, якорь 09:00, старты с start+D&lt;=18:00 (T4); окно 14 календарных дней включая сегодня, сегодняшние старты строго после now по MSK (T3); свободен = нет пересечения полуоткрытых интервалов с записями (T2). Нет такого типа — 404.
+        /// Свободные старты слотов типа на дату — список wall-clock datetime «2026-10-21T09:00» (T8). Сервер считает один раз: шаг сетки = durationMinutes, якорь 09:00, старты с start+D&lt;=18:00 (T4); любая будущая дата, сегодняшние старты строго после now по MSK (T3); свободен = нет пересечения полуоткрытых интервалов с записями (T2). Нет такого типа — 404.
         /// </summary>
         /// <returns>A List&lt;string&gt;</returns>
         /// <param name="cancellationToken">Cancellation token to use when cancelling requests</param>
@@ -58,7 +58,7 @@ namespace CallCalendar.Client.Api.EventTypes.Item.Availability
             return collectionResult?.AsList();
         }
         /// <summary>
-        /// Свободные старты слотов типа на дату — список wall-clock datetime «2026-10-21T09:00» (T8). Сервер считает один раз: шаг сетки = durationMinutes, якорь 09:00, старты с start+D&lt;=18:00 (T4); окно 14 календарных дней включая сегодня, сегодняшние старты строго после now по MSK (T3); свободен = нет пересечения полуоткрытых интервалов с записями (T2). Нет такого типа — 404.
+        /// Свободные старты слотов типа на дату — список wall-clock datetime «2026-10-21T09:00» (T8). Сервер считает один раз: шаг сетки = durationMinutes, якорь 09:00, старты с start+D&lt;=18:00 (T4); любая будущая дата, сегодняшние старты строго после now по MSK (T3); свободен = нет пересечения полуоткрытых интервалов с записями (T2). Нет такого типа — 404.
         /// </summary>
         /// <returns>A <see cref="RequestInformation"/></returns>
         /// <param name="requestConfiguration">Configuration for the request such as headers, query parameters, and middleware options.</param>
@@ -86,7 +86,7 @@ namespace CallCalendar.Client.Api.EventTypes.Item.Availability
             return new global::CallCalendar.Client.Api.EventTypes.Item.Availability.AvailabilityRequestBuilder(rawUrl, RequestAdapter);
         }
         /// <summary>
-        /// Свободные старты слотов типа на дату — список wall-clock datetime «2026-10-21T09:00» (T8). Сервер считает один раз: шаг сетки = durationMinutes, якорь 09:00, старты с start+D&lt;=18:00 (T4); окно 14 календарных дней включая сегодня, сегодняшние старты строго после now по MSK (T3); свободен = нет пересечения полуоткрытых интервалов с записями (T2). Нет такого типа — 404.
+        /// Свободные старты слотов типа на дату — список wall-clock datetime «2026-10-21T09:00» (T8). Сервер считает один раз: шаг сетки = durationMinutes, якорь 09:00, старты с start+D&lt;=18:00 (T4); любая будущая дата, сегодняшние старты строго после now по MSK (T3); свободен = нет пересечения полуоткрытых интервалов с записями (T2). Нет такого типа — 404.
         /// </summary>
         [global::System.CodeDom.Compiler.GeneratedCode("Kiota", "1.0.0")]
         public partial class AvailabilityRequestBuilderGetQueryParameters 
