@@ -17,7 +17,7 @@ public class BookingWindowTests
     }
 
     [Fact]
-public async Task Far_future_booking_is_accepted()
+    public async Task Far_future_booking_is_accepted()
     {
         // Arrange
         using var app = new ApiTestApp();
