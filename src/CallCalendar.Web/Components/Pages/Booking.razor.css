@@ -67,12 +67,99 @@ h1 {
     margin-bottom: 2rem;
 }
 
-    .choice-grid.dates {
-        grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
-    }
-
     .choice-grid.slots {
         grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+    }
+
+.calendar {
+    margin-bottom: 2rem;
+}
+
+.calendar-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.calendar-month {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--ink);
+}
+
+.nav-arrow {
+    background: var(--surface);
+    border: 1px solid #cfd6df;
+    border-radius: 10px;
+    width: 2rem;
+    height: 2rem;
+    cursor: pointer;
+    font-size: 1.1rem;
+    color: var(--ink);
+    line-height: 1;
+}
+
+    .nav-arrow:hover {
+        border-color: var(--accent, #2f6fed);
+    }
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.25rem;
+}
+
+.weekday {
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted);
+    padding: 0.35rem 0;
+    text-transform: uppercase;
+}
+
+.day {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
+    border: 1px solid #cfd6df;
+    border-radius: 10px;
+    background: var(--surface);
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--ink);
+    padding: 0;
+}
+
+    .day.empty {
+        border: none;
+        background: none;
+        cursor: default;
+    }
+
+    .day:hover:not(:disabled) {
+        border-color: var(--accent, #2f6fed);
+    }
+
+    .day.today {
+        border-color: var(--accent, #2f6fed);
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #2f6fed) 18%, transparent);
+    }
+
+    .day.selected {
+        border-color: var(--accent, #2f6fed);
+        background: color-mix(in srgb, var(--accent, #2f6fed) 12%, #fff);
+    }
+
+    .day:disabled {
+        color: #a8b0b9;
+        border-color: #e3e7ec;
+        background: #f5f6f8;
+        cursor: default;
+        box-shadow: none;
     }
 
 .choice {

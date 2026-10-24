@@ -59,7 +59,7 @@ public class BookingValidationTests
     {
         using var app = new ApiTestApp();
 
-        // Вчера в 10:00 — формально на сетке, но вне окна и в прошлом (T3) → 400.
+        // Вчера в 10:00 — формально на сетке, но в прошлом (T3) → 400.
         var response = await app.BookAsync(ApiTestApp.ThirtyMinTypeId, ApiTestApp.Day(-1), 10, 0);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
