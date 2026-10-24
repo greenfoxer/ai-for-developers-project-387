@@ -1,0 +1,55 @@
+name: opencode-review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: read
+      issues: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Run OpenCode review
+        uses: anomalyco/opencode/github@latest
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          model: opencode/deepseek-v4-pro
+          use_github_token: true
+          prompt: |
+            Ты проводишь авторевью pull request в репозитории CallCalendar
+            (Blazor Web App + ASP.NET Core API).
+
+            Цель — первый проход по стилю, типам и очевидным ошибкам.
+            Не вноси правки, не создавай коммиты, не открывай PR, не сливай.
+
+            Прочитай описание PR, связанный issue и diff целиком.
+
+            Критерии проверки:
+            1. Соответствие AGENTS.md: соблюдение ограничений, конвенции
+               коммитов (Conventional Commits), не трогать
+               .github/workflows/hexlet-check.yml.
+            2. Соответствие изменениям описанию PR и исходному issue.
+            3. Качество кода: обработка ошибок, валидация, типизация.
+            4. UI: соответствие задаче, доступность, стили.
+            5. Тесты: при необходимости предложи обновление.
+            6. Архитектура: не нарушай слоистость API/Web/Client.
+
+            Оставь замечания:
+            - Там, где уместно — комментарии к конкретным строкам в diff
+              (pull_request_review_comment).
+            - При общих замечаниях/вопросах — общий комментарий в обсуждении PR
+              (issue_comment).
+            Будь конкретным: файл, суть проблемы, предложение исправления.
+            Пиши по-русски.
