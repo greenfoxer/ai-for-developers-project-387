@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.0](https://github.com/greenfoxer/ai-for-developers-project-387/compare/v1.0.0...v1.1.0) (2026-10-24)
+
+
+### Features
+
+* rewrite calendar to month view and remove 14-day window ([befd60d](https://github.com/greenfoxer/ai-for-developers-project-387/commit/befd60ddb162ed1c1cd861afffd15326eed4feeb))
+
+
+### Bug Fixes
+
+* restore indentation in booking window test ([e5cf416](https://github.com/greenfoxer/ai-for-developers-project-387/commit/e5cf4161a67303c327bab9efa8eb72806a55f46a))
+
 ## 1.0.0 (2026-10-23)
 
 
