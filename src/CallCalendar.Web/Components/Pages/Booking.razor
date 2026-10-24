@@ -21,16 +21,61 @@
                 <p>Загрузка…</p>
             </div>
         }
+        else if (step == BookingStep.Done)
+        {
+            <div class="confirm-card">
+                <h2>Запись подтверждена ✅</h2>
+                <p class="confirm-main">@created!.EventTypeName · @selectedDayText, @selectedSlotText — @endTime</p>
+                <p class="confirm-note">@created.Name (@created.Email)</p>
+                @if (!string.IsNullOrWhiteSpace(created.AdditionalInfo))
+                {
+                    <p class="confirm-note">«@created.AdditionalInfo»</p>
+                }
+                <button class="cta secondary" @onclick="Restart">Записаться ещё раз</button>
+            </div>
+        }
+        else if (step == BookingStep.Guest)
+        {
+            <div class="guest-form">
+                <p class="selected-summary">@selectedType!.Name · @selectedDayText, @selectedSlotText</p>
+                @if (formError is not null)
+                {
+                    <div class="notice"><p>@formError</p></div>
+                }
+                <label class="field">
+                    <span>Имя *</span>
+                    <input @bind="guestName" placeholder="Как к вам обращаться" />
+                    @if (nameError is not null)
+                    {
+                        <span class="field-error">@nameError</span>
+                    }
+                </label>
+                <label class="field">
+                    <span>Email *</span>
+                    <input @bind="guestEmail" placeholder="you@example.com" />
+                    @if (emailError is not null)
+                    {
+                        <span class="field-error">@emailError</span>
+                    }
+                </label>
+                <label class="field">
+                    <span>Дополнительная информация</span>
+                    <textarea @bind="guestAdditionalInfo" rows="3" placeholder="Пара слов о будущем звонке (необязательно)"></textarea>
+                </label>
+                <button class="cta" disabled="@submitting" @onclick="SubmitAsync">
+                    @if (submitting)
+                    {
+                        <span>Записываю…</span>
+                    }
+                    else
+                    {
+                        <span>Записаться</span>
+                    }
+                </button>
+            </div>
+        }
         else
         {
-            <div class="crumbs">
-                @if (step != BookingStep.Type && step != BookingStep.Done)
-                {
-                    <button class="crumb-back" @onclick="GoBack">← назад</button>
-                }
-                <span class="crumb-label">@StepCaption(step)</span>
-            </div>
-
             @if (globalNotice is not null)
             {
                 <div class="notice">
@@ -38,13 +83,13 @@
                 </div>
             }
 
-            @switch (step)
-            {
-                case BookingStep.Type:
+            <div class="booking-columns">
+                <section class="column">
+                    <h2>1. Тип события</h2>
                     <div class="choice-grid">
                         @foreach (var t in types)
                         {
-                            <button class="choice" @onclick="() => ChooseType(t)">
+                            <button class="choice @(t == selectedType ? "selected" : "")" @onclick="() => ChooseType(t)">
                                 <span class="choice-title">@t.Name</span>
                                 @if (!string.IsNullOrWhiteSpace(t.Description))
                                 {
@@ -54,23 +99,36 @@
                             </button>
                         }
                     </div>
-                    break;
+                </section>
 
-                case BookingStep.Date:
-                    <div class="choice-grid dates">
-                        @foreach (var day in days!)
-                        {
-                            <button class="choice day @(day.Equals(selectedDay) ? "selected" : "")"
-                                    @onclick="() => ChooseDateAsync(day)">
-                                <span class="choice-title">@day.ToString("dd.MM")</span>
-                                <span class="choice-note">@WeekdayShort(day)</span>
-                            </button>
-                        }
-                    </div>
-                    break;
+                <section class="column">
+                    <h2>2. Календарь</h2>
+                    @if (selectedType is null)
+                    {
+                        <p class="column-hint">Сначала выберите тип события.</p>
+                    }
+                    else
+                    {
+                        <div class="choice-grid dates">
+                            @foreach (var day in days!)
+                            {
+                                <button class="choice day @(day.Equals(selectedDay) ? "selected" : "")"
+                                        @onclick="() => ChooseDateAsync(day)">
+                                    <span class="choice-title">@day.ToString("dd.MM")</span>
+                                    <span class="choice-note">@WeekdayShort(day)</span>
+                                </button>
+                            }
+                        </div>
+                    }
+                </section>
 
-                case BookingStep.Slot:
-                    @if (slotsLoading)
+                <section class="column">
+                    <h2>3. Слоты</h2>
+                    @if (selectedType is null)
+                    {
+                        <p class="column-hint">Сначала выберите тип события.</p>
+                    }
+                    else if (slotsLoading)
                     {
                         <div class="stub-card"><p>Ищем свободные слоты…</p></div>
                     }
@@ -80,7 +138,7 @@
                             <p>@conflictNotice</p>
                         </div>
                     }
-                    @if (slots is { Count: 0 })
+                    else if (slots is { Count: 0 })
                     {
                         <div class="stub-card">
                             <p>На @selectedDayText свободных слотов нет — выберите другой день.</p>
@@ -97,61 +155,8 @@
                             }
                         </div>
                     }
-                    break;
-
-                case BookingStep.Guest:
-                    <div class="guest-form">
-                        <p class="selected-summary">@selectedType!.Name · @selectedDayText, @selectedSlotText</p>
-                        @if (formError is not null)
-                        {
-                            <div class="notice"><p>@formError</p></div>
-                        }
-                        <label class="field">
-                            <span>Имя *</span>
-                            <input @bind="guestName" placeholder="Как к вам обращаться" />
-                            @if (nameError is not null)
-                            {
-                                <span class="field-error">@nameError</span>
-                            }
-                        </label>
-                        <label class="field">
-                            <span>Email *</span>
-                            <input @bind="guestEmail" placeholder="you@example.com" />
-                            @if (emailError is not null)
-                            {
-                                <span class="field-error">@emailError</span>
-                            }
-                        </label>
-                        <label class="field">
-                            <span>Дополнительная информация</span>
-                            <textarea @bind="guestAdditionalInfo" rows="3" placeholder="Пара слов о будущем звонке (необязательно)"></textarea>
-                        </label>
-                        <button class="cta" disabled="@submitting" @onclick="SubmitAsync">
-                            @if (submitting)
-                            {
-                                <span>Записываю…</span>
-                            }
-                            else
-                            {
-                                <span>Записаться</span>
-                            }
-                        </button>
-                    </div>
-                    break;
-
-                case BookingStep.Done:
-                    <div class="confirm-card">
-                        <h2>Запись подтверждена ✅</h2>
-                        <p class="confirm-main">@created!.EventTypeName · @selectedDayText, @selectedSlotText — @endTime</p>
-                        <p class="confirm-note">@created.Name (@created.Email)</p>
-                        @if (!string.IsNullOrWhiteSpace(created.AdditionalInfo))
-                        {
-                            <p class="confirm-note">«@created.AdditionalInfo»</p>
-                        }
-                        <button class="cta secondary" @onclick="Restart">Записаться ещё раз</button>
-                    </div>
-                    break;
-            }
+                </section>
+            </div>
         }
     </div>
 </div>
@@ -159,9 +164,7 @@
 @code {
     private enum BookingStep
     {
-        Type,
-        Date,
-        Slot,
+        Select,
         Guest,
         Done,
     }
@@ -170,7 +173,7 @@
 
     private static readonly string[] weekdayNames = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"];
 
-    private BookingStep step = BookingStep.Type;
+    private BookingStep step = BookingStep.Select;
     private string? apiUnavailable;
     private List<EventType>? types;
     private EventType? selectedType;
@@ -203,15 +206,6 @@
         }
     }
 
-    private static string StepCaption(BookingStep step) => step switch
-    {
-        BookingStep.Type => "1. Выберите тип события",
-        BookingStep.Date => "2. Выберите дату",
-        BookingStep.Slot => "3. Выберите слот",
-        BookingStep.Guest => "4. Данные для записи",
-        _ => "Готово",
-    };
-
     private static string WeekdayShort(DateTime day) => weekdayNames[((int)day.DayOfWeek + 6) % 7];
 
     private string selectedDayText => selectedDay.ToString("dd.MM.yyyy");
@@ -229,12 +223,15 @@
     private void ChooseType(EventType type)
     {
         selectedType = type;
+        selectedDay = default;
+        slots = null;
+        selectedSlot = null;
+        conflictNotice = null;
         globalNotice = null;
         formError = null;
         // Окно записи: 14 календарных дней, включая сегодня (T3). Границу «сегодня» считаем по MSK,
         // как и сервер (T8 Q2); если дата «постарела» за время сессии — сервер вернёт пустой список.
         days = Enumerable.Range(0, 14).Select(i => MskClock.Now().Date.AddDays(i)).ToList();
-        step = BookingStep.Date;
     }
 
     /// Wall-clock по Москве — зеркалит серверный MskClock/BookingWindow (T3/T8):
@@ -252,7 +249,6 @@
         slots = null;
         conflictNotice = null;
         slotsLoading = true;
-        step = BookingStep.Slot;
         await LoadSlotsAsync();
     }
 
@@ -268,7 +264,9 @@
         {
             // тип события мог исчезнуть из виду — возвращаем к его выбору с пояснением
             globalNotice = "Этот тип события больше недоступен — выберите другой.";
-            step = BookingStep.Type;
+            selectedType = null;
+            days = null;
+            slots = null;
             slotsLoading = false;
             return;
         }
@@ -325,14 +323,17 @@
         {
             // слот заняли во время оформления (T2) — возвращаем к сетке с обновлением
             conflictNotice = "Этот слот только что заняли. Выберите другое время.";
-            step = BookingStep.Slot;
+            step = BookingStep.Select;
             slotsLoading = true;
             await LoadSlotsAsync();
         }
         catch (ProblemDetails ex) when (ex.ResponseStatusCode == 404)
         {
             globalNotice = "Этот тип события больше недоступен — выберите другой.";
-            step = BookingStep.Type;
+            selectedType = null;
+            days = null;
+            slots = null;
+            step = BookingStep.Select;
         }
         catch (ProblemDetails ex) when (ex.ResponseStatusCode == 400)
         {
@@ -352,24 +353,12 @@
     private static bool IsProbablyEmail(string value) =>
         !string.IsNullOrWhiteSpace(value) && value.Contains('@') && !value.Contains(' ');
 
-    private void GoBack()
-    {
-        conflictNotice = null;
-        formError = null;
-        globalNotice = null;
-        nameError = null;
-        emailError = null;
-        step = step switch
-        {
-            BookingStep.Date => BookingStep.Type,
-            BookingStep.Slot => BookingStep.Date,
-            BookingStep.Guest => BookingStep.Slot,
-            _ => BookingStep.Type,
-        };
-    }
-
     private void Restart()
     {
+        selectedType = null;
+        days = null;
+        selectedDay = default;
+        slots = null;
         selectedSlot = null;
         guestName = "";
         guestEmail = "";
@@ -381,6 +370,6 @@
         globalNotice = null;
         nameError = null;
         emailError = null;
-        step = BookingStep.Type;
+        step = BookingStep.Select;
     }
 }
