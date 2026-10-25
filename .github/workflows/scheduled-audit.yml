@@ -19,6 +19,7 @@ jobs:
   audit:
     name: Lighthouse audit
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -47,6 +48,7 @@ jobs:
     name: Analyze report and create issue
     needs: audit
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -59,11 +61,11 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Download report artifact outside worktree
+      - name: Download report artifact
         uses: actions/download-artifact@v4
         with:
           name: lighthouse-report
-          path: ${{ runner.temp }}/lhci-report
+          path: ./lhci-report
 
       - name: Verify worktree is clean
         run: git status --porcelain
@@ -81,7 +83,7 @@ jobs:
             Ты проводишь плановую проверку качества приложения CallCalendar
             (Blazor Web App + ASP.NET Core API) по отчёту Lighthouse.
 
-            Отчёт лежит в ${{ runner.temp }}/lhci-report:
+            Отчёт лежит в ./lhci-report (внутри проекта, в .gitignore):
             - *.json — полный результат Lighthouse;
             - *.html — визуальный отчёт;
             - manifest.json — список прогонов.
@@ -98,20 +100,22 @@ jobs:
             2. Отбери находки, которые реально стоят исправления:
                сначала то, что сильнее всего бьёт по оценкам.
             3. ОБЯЗАТЕЛЬНО создай issue с итогами проверки:
-               сначала сохрани тело в /tmp/lighthouse-issue.md, затем
+               сначала сохрани тело в ./lhci-report/issue.md, затем
                gh issue create \
                  --title "Плановая проверка Lighthouse: <дата>" \
-                 --body-file /tmp/lighthouse-issue.md
+                 --body-file ./lhci-report/issue.md
                В теле issue: таблица оценок по категориям, топ находок
                (аудит, оценка, суть проблемы), рекомендации в порядке
                приоритета и ссылка на прогон Actions выше.
+               Папка ./lhci-report в .gitignore, поэтому этот файл
+               не сделает рабочее дерево грязным.
             4. В ответе оставь только ссылку на созданный issue и
                краткую сводку оценок.
 
             Требования:
             - Пиши по-русски, структурированно и без общих слов.
             - Итоги обязаны быть в issue, а не только в логе прогона.
-            - Репозиторий обязан остаться чистым: не создавай и не
-              изменяй в нём ни одного файла. Все рабочие файлы
-              (тело issue и прочее) сохраняй только в /tmp.
+            - Репозиторий обязан остаться чистым: не изменяй ни одного
+              отслеживаемого git'ом файла. Все рабочие файлы сохраняй
+              только в ./lhci-report (она в .gitignore).
             - Не изменяй код, конфиги и воркфлоу репозитория.

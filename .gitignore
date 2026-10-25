@@ -28,3 +28,6 @@ node_modules/
 *.db
 *.db-shm
 *.db-wal
+
+# Отчёт Lighthouse из scheduled-audit: хранится в артефакте CI, не коммитим
+lhci-report/
