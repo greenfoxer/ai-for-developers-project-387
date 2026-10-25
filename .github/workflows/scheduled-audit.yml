@@ -1,0 +1,105 @@
+name: scheduled-audit
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+      timezone: Europe/Moscow
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+  issues: write
+
+env:
+  TARGET_URL: https://ai-for-developers-project-386-production-af88.up.railway.app
+
+jobs:
+  audit:
+    name: Lighthouse audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run Lighthouse
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: |
+          npx @lhci/cli@latest autorun \
+            --collect.url="$TARGET_URL" \
+            --collect.numberOfRuns=1 \
+            --upload.target=filesystem \
+            --upload.outputDir=./lhci-report
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report
+          path: ./lhci-report
+          if-no-files-found: warn
+
+  analyze:
+    name: Analyze report and create issue
+    needs: audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Download report artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: lighthouse-report
+          path: ./lhci-report
+
+      - name: Run OpenCode analysis
+        uses: anomalyco/opencode/github@latest
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          model: opencode/deepseek-v4-pro
+          use_github_token: true
+          prompt: |
+            Ты проводишь плановую проверку качества приложения CallCalendar
+            (Blazor Web App + ASP.NET Core API) по отчёту Lighthouse.
+
+            Отчёт лежит в ./lhci-report:
+            - *.json — полный результат Lighthouse;
+            - *.html — визуальный отчёт;
+            - manifest.json — список прогонов.
+
+            Проверяемая ссылка: https://ai-for-developers-project-386-production-af88.up.railway.app
+            Прогон Actions: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            План проверки запускается по расписанию, поэтому ответить
+            некому — результат обязан остаться в репозитории.
+
+            1. Прочитай JSON-отчёт: оценки категорий (performance,
+               accessibility, best-practices, seo) и проваленные аудиты
+               с весом влияния.
+            2. Отбери находки, которые реально стоят исправления:
+               сначала то, что сильнее всего бьёт по оценкам.
+            3. ОБЯЗАТЕЛЬНО создай issue с итогами проверки:
+               gh issue create \
+                 --title "Плановая проверка Lighthouse: <дата>" \
+                 --body-file <файл с отчётом>
+               В теле issue: таблица оценок по категориям, топ находок
+               (аудит, оценка, суть проблемы), рекомендации в порядке
+               приоритета и ссылка на прогон Actions выше.
+            4. В ответе оставь только ссылку на созданный issue и
+               краткую сводку оценок.
+
+            Требования:
+            - Пиши по-русски, структурированно и без общих слов.
+            - Итоги обязаны быть в issue, а не только в логе прогона.
+            - Не изменяй код, конфиги и воркфлоу репозитория.
