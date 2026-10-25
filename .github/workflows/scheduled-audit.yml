@@ -6,11 +6,7 @@ on:
       timezone: Europe/Moscow
   workflow_dispatch:
 
-permissions:
-  id-token: write
-  contents: write
-  pull-requests: write
-  issues: write
+permissions: {}
 
 env:
   TARGET_URL: https://ai-for-developers-project-386-production-af88.up.railway.app
@@ -18,6 +14,9 @@ env:
 jobs:
   audit:
     name: Lighthouse audit
+    if: |
+      github.event_name == 'schedule' ||
+      !endsWith(github.actor, '[bot]')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -49,6 +48,12 @@ jobs:
     needs: audit
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    if: |
+      github.event_name == 'schedule' ||
+      !endsWith(github.actor, '[bot]')
+    permissions:
+      contents: read
+      issues: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -78,6 +83,7 @@ jobs:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           model: opencode/deepseek-v4-pro
+          share: "true"
           use_github_token: true
           prompt: |
             Ты проводишь плановую проверку качества приложения CallCalendar
@@ -99,7 +105,12 @@ jobs:
                с весом влияния.
             2. Отбери находки, которые реально стоят исправления:
                сначала то, что сильнее всего бьёт по оценкам.
-            3. ОБЯЗАТЕЛЬНО создай issue с итогами проверки:
+            3. Прежде чем создавать issue, проверь существующие:
+               gh issue list --state open --search "Плановая проверка Lighthouse"
+               Если открыт такой issue за сегодня — не создавай дубликат,
+               дополни его новым комментарием:
+               gh issue comment <number> --body-file ./lhci-report/issue.md
+               Иначе создай issue с итогами проверки:
                сначала сохрани тело в ./lhci-report/issue.md, затем
                gh issue create \
                  --title "Плановая проверка Lighthouse: <дата>" \

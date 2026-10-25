@@ -6,6 +6,9 @@ on:
 
 jobs:
   triage:
+    if: |
+      !endsWith(github.actor, '[bot]') &&
+      github.event.issue.user.type != 'Bot'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -23,6 +26,7 @@ jobs:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
         with:
           model: opencode/deepseek-v4-pro
+          share: "true"
           prompt: |
             Ты триажишь новую задачу в репозитории CallCalendar
             (Blazor Web App + ASP.NET Core API).

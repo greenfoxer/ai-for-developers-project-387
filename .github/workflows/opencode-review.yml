@@ -6,6 +6,9 @@ on:
 
 jobs:
   review:
+    if: |
+      !endsWith(github.actor, '[bot]') &&
+      github.event.pull_request.user.type != 'Bot'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -27,6 +30,7 @@ jobs:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           model: opencode/deepseek-v4-pro
+          share: "true"
           use_github_token: true
           prompt: |
             Ты проводишь авторевью pull request в репозитории CallCalendar
