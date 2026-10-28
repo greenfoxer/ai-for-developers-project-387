@@ -39,7 +39,34 @@ dotnet build CallCalendar.sln -c Release
 dotnet test CallCalendar.sln -c Release
 ```
 
-Ручной запуск приложения: `dotnet run --project src/CallCalendar.Web`.
+## Запуск сервиса для просмотра
+
+Фразы «хочу увидеть сервис», «подними сервис», «покажи приложение» означают:
+поднять API и Web и оставить их работать. API слушает `localhost:5000` (задано в
+`src/CallCalendar.Api/Program.cs`) и наружу не публикуется; Web — публичная точка
+входа, он ходит в API по `http://localhost:5000` из `appsettings.json`.
+`launchSettings.json` форсит порт 5175 и игнорирует `ASPNETCORE_URLS`, поэтому
+запускать только с `--no-launch-profile` и явным `--urls`.
+
+```bash
+# 1. API — в отдельном процессе (без него Web деградирует)
+dotnet run --project src/CallCalendar.Api --no-launch-profile -c Release
+
+# 2. Web — публичная точка входа, слушает все интерфейсы
+ASPNETCORE_ENVIRONMENT=Development \
+dotnet run --project src/CallCalendar.Web --no-launch-profile -c Release \
+  --urls http://0.0.0.0:5173
+```
+
+Проверка готовности:
+
+```bash
+curl -s -o /dev/null -w 'api:%{http_code}\n' http://127.0.0.1:5000/api/event-types
+curl -s -o /dev/null -w 'web:%{http_code}\n' http://127.0.0.1:5173/
+```
+
+Оба процесса запускать отсоединёнными (`setsid nohup ... &`), иначе они завершатся
+вместе с командной сессией агента. Снаружи контейнера нужен проброс порта `5173`.
 
 ## Что требует отдельного запроса
 
