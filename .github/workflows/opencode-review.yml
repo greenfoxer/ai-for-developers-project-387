@@ -24,12 +24,9 @@ jobs:
         uses: anomalyco/opencode/github@latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           model: opencode-go/kimi-k3
           share: "true"
-          use_github_token: true
           prompt: |
             Ты проводишь авторевью pull request в репозитории CallCalendar
             (Blazor Web App + ASP.NET Core API).
