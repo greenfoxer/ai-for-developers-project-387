@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.1](https://github.com/greenfoxer/ai-for-developers-project-387/compare/v1.2.0...v1.2.1) (2026-10-28)
+
+
+### Bug Fixes
+
+* show slot time interval labels ([ddc8381](https://github.com/greenfoxer/ai-for-developers-project-387/commit/ddc83814caa595591e5d5bc22b399ba6785107ff))
+* show slot time interval labels ([504cc88](https://github.com/greenfoxer/ai-for-developers-project-387/commit/504cc886a8083c06e8aa7542b866592462d8e653))
+
 ## [1.2.0](https://github.com/greenfoxer/ai-for-developers-project-387/compare/v1.1.0...v1.2.0) (2026-10-28)
 
 
