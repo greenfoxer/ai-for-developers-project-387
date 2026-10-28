@@ -61,9 +61,11 @@ public class BookingFlowTests : IClassFixture<E2EApp>
 
         await page.GetByRole(AriaRole.Button, new() { Name = tomorrow.Day.ToString(), Exact = true }).ClickAsync();
 
-        // 3. Выбор первого свободного слота.
-        await page.Locator("button.slot").First.WaitForAsync();
-        await page.Locator("button.slot").First.ClickAsync();
+        // 3. Выбор первого свободного слота. Подпись слота — интервал «HH:mm — HH:mm» (issue #16).
+        var firstSlot = page.Locator("button.slot").First;
+        await firstSlot.WaitForAsync();
+        Assert.Matches(@"^\d{2}:\d{2} — \d{2}:\d{2}$", (await firstSlot.InnerTextAsync()).Trim());
+        await firstSlot.ClickAsync();
 
         // 4. Заполнение формы гостя.
         await page.GetByPlaceholder("Как к вам обращаться").FillAsync("Иван Петров");

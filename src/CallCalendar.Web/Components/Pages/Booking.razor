@@ -1,6 +1,7 @@
 @page "/book"
 @rendermode InteractiveServer
 @inject CallCalendarClient Api
+@using System.Globalization
 @using ClientBooking = CallCalendar.Client.Models.Booking
 
 <PageTitle>Запись на звонок</PageTitle>
@@ -37,7 +38,7 @@
         else if (step == BookingStep.Guest)
         {
             <div class="guest-form">
-                <p class="selected-summary">@selectedType!.Name · @selectedDayText, @selectedSlotText</p>
+                <p class="selected-summary">@selectedType!.Name · @selectedDayText, @SlotLabel(selectedSlot)</p>
                 @if (formError is not null)
                 {
                     <div class="notice"><p>@formError</p></div>
@@ -169,7 +170,7 @@
                             @foreach (var slot in slots)
                             {
                                 <button class="choice slot" @onclick="() => ChooseSlot(slot)">
-                                    <span class="choice-title">@TimePart(slot)</span>
+                                    <span class="choice-title">@SlotLabel(slot)</span>
                                 </button>
                             }
                         </div>
@@ -189,6 +190,9 @@
     }
 
     private const string UnavailableMessage = "Сервис записи временно недоступен. Попробуйте позже.";
+
+    /// Формат wall-clock строки контракта — зеркало серверного MskClock.WallFormat (T8).
+    private const string WallClockFormat = "yyyy-MM-ddTHH:mm";
 
     /// Окно записи — 14 календарных дней с сегодняшнего; дни дальше в календаре недоступны (T3).
     private const int WindowDays = 14;
@@ -244,6 +248,20 @@
         null => "",
         _ => wallClock,
     };
+
+    /// Подпись слота «12:00 — 12:30»: конец = начало + длительность выбранного типа (issue #16).
+    /// Контракт отдаёт только старты, поэтому конец считаем на клиенте; fallback — одно начало.
+    private string SlotLabel(string? slot)
+    {
+        var start = TimePart(slot);
+        if (selectedType?.DurationMinutes is not { } duration ||
+            !DateTime.TryParseExact(slot, WallClockFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var startWall))
+        {
+            return start;
+        }
+
+        return $"{start} — {startWall.AddMinutes(duration).ToString("HH:mm", CultureInfo.InvariantCulture)}";
+    }
 
     private string MonthTitle => $"{monthNames[displayedMonth.Month - 1]} {displayedMonth.Year}";
 
