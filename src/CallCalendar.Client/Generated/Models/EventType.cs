@@ -22,7 +22,7 @@ namespace CallCalendar.Client.Models
 #else
         public string Description { get; set; }
 #endif
-        /// <summary>Длительность в минутах, &gt; 0; определяет шаг сетки слотов (T4/T5).</summary>
+        /// <summary>Длительность в минутах, &gt; 0; определяет длительность слота (T4/T5).</summary>
         public int? DurationMinutes { get; set; }
         /// <summary>Идентификатор типа события (T5).</summary>
         public int? Id { get; set; }

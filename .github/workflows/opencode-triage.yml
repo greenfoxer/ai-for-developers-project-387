@@ -25,7 +25,7 @@ jobs:
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
         with:
-          model: opencode/deepseek-v4-pro
+          model: opencode/kimi-k3
           share: "true"
           prompt: |
             Ты триажишь новую задачу в репозитории CallCalendar

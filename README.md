@@ -36,10 +36,10 @@ cd ai-for-developers-project-387
 
 | Воркфлоу | Чем запускается | Модель | Зачем |
 |---|---|---|---|
-| `opencode.yml` | комментарий с `/opencode` или `/oc` в issue или PR | `opencode/deepseek-v4-pro` | интерактивный вызов: исследовать, исправить, сделать PR |
-| `opencode-triage.yml` | создан issue | `opencode/deepseek-v4-pro` | разбор новой задачи и постановка без правок кода |
-| `opencode-review.yml` | PR opened / synchronize / reopened / ready_for_review | `opencode/deepseek-v4-pro` | авторевью без правок — только комментарии |
-| `scheduled-audit.yml` | cron `0 3 * * *` и вручную через workflow_dispatch | `opencode/deepseek-v4-pro` | плановая проверка Lighthouse, результат в issue |
+| `opencode.yml` | комментарий с `/opencode` или `/oc` в issue или PR | `opencode/kimi-k3` | интерактивный вызов: исследовать, исправить, сделать PR |
+| `opencode-triage.yml` | создан issue | `opencode/kimi-k3` | разбор новой задачи и постановка без правок кода |
+| `opencode-review.yml` | PR opened / synchronize / reopened / ready_for_review | `opencode/kimi-k3` | авторевью без правок — только комментарии |
+| `scheduled-audit.yml` | cron `0 3 * * *` и вручную через workflow_dispatch | `opencode/kimi-k3` | плановая проверка Lighthouse, результат в issue |
 
 Везде одна модель: задачи проекта укладываются в её возможности, дешёвый
 вариант здесь не выигрывает по деньгам заметно, а предсказуемость выше —
@@ -107,6 +107,10 @@ issue, чтобы не реагировать на объекты, создан�
 Тесты запускаются на каждый коммит. За запуск отвечает файл `.github/workflows/hexlet-check.yml` — не удаляйте и не переименовывайте ни его, ни репозиторий.
 
 </details>
+
+## Демо
+
+Публичная страница сервиса: https://ai-for-developers-project-386-production-af88.up.railway.app
 
 ## О Хекслете
 
