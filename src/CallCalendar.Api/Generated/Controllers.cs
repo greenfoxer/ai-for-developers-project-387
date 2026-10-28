@@ -37,12 +37,28 @@ namespace CallCalendar.Api
         System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.ActionResult<Booking>> CreateAsync(NewBooking body);
 
         /// <remarks>
-        /// Предстоящие встречи всех типов одним списком: старт строго после now (MSK), по возрастанию старта, без пагинации (T7).
+        /// Предстоящие встречи всех типов одним списком: старт строго после now (MSK), по возрастанию старта, без пагинации (T7); отменённые не входят.
         /// </remarks>
 
         /// <returns>The request has succeeded.</returns>
 
         System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.ActionResult<System.Collections.Generic.ICollection<Booking>>> UpcomingAsync();
+
+        /// <remarks>
+        /// Отменённые встречи всех типов одним списком: по возрастанию старта, без пагинации.
+        /// </remarks>
+
+        /// <returns>The request has succeeded.</returns>
+
+        System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.ActionResult<System.Collections.Generic.ICollection<Booking>>> CancelledAsync();
+
+        /// <remarks>
+        /// Отменить запланированную встречу: слот снова становится доступным для записи, встреча попадает в список отменённых. Нет такой записи — 404; уже отменена — 409.
+        /// </remarks>
+
+        /// <returns>The request has succeeded.</returns>
+
+        System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.ActionResult<Booking>> CancelAsync(int id);
 
     }
 
@@ -68,7 +84,7 @@ namespace CallCalendar.Api
         }
 
         /// <remarks>
-        /// Предстоящие встречи всех типов одним списком: старт строго после now (MSK), по возрастанию старта, без пагинации (T7).
+        /// Предстоящие встречи всех типов одним списком: старт строго после now (MSK), по возрастанию старта, без пагинации (T7); отменённые не входят.
         /// </remarks>
         /// <returns>The request has succeeded.</returns>
         [Microsoft.AspNetCore.Mvc.HttpGet, Microsoft.AspNetCore.Mvc.Route("api/bookings")]
@@ -76,6 +92,28 @@ namespace CallCalendar.Api
         {
 
             return _implementation.UpcomingAsync();
+        }
+
+        /// <remarks>
+        /// Отменённые встречи всех типов одним списком: по возрастанию старта, без пагинации.
+        /// </remarks>
+        /// <returns>The request has succeeded.</returns>
+        [Microsoft.AspNetCore.Mvc.HttpGet, Microsoft.AspNetCore.Mvc.Route("api/bookings/cancelled")]
+        public System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.ActionResult<System.Collections.Generic.ICollection<Booking>>> Cancelled()
+        {
+
+            return _implementation.CancelledAsync();
+        }
+
+        /// <remarks>
+        /// Отменить запланированную встречу: слот снова становится доступным для записи, встреча попадает в список отменённых. Нет такой записи — 404; уже отменена — 409.
+        /// </remarks>
+        /// <returns>The request has succeeded.</returns>
+        [Microsoft.AspNetCore.Mvc.HttpPost, Microsoft.AspNetCore.Mvc.Route("api/bookings/{id}/cancel")]
+        public System.Threading.Tasks.Task<Microsoft.AspNetCore.Mvc.ActionResult<Booking>> Cancel([Microsoft.AspNetCore.Mvc.ModelBinding.BindRequired] int id)
+        {
+
+            return _implementation.CancelAsync(id);
         }
 
     }

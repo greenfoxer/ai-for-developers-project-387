@@ -78,6 +78,31 @@ public sealed class BookingsImplementation(
         return new OkObjectResult(dtos);
     }
 
+    public async Task<ActionResult<ICollection<Booking>>> CancelledAsync()
+    {
+        var entities = await bookings.ListCancelledAsync(CancellationToken.None);
+        ICollection<Booking> dtos = entities.Select(b => ToDto(b, b.EventType!)).ToList();
+        return new OkObjectResult(dtos);
+    }
+
+    public async Task<ActionResult<Booking>> CancelAsync(int id)
+    {
+        var entity = await bookings.FindWithTypeAsync(id, CancellationToken.None);
+        if (entity is null)
+        {
+            return ApiProblem.Create(404, "Not found", $"Запись {id} не найдена.");
+        }
+
+        if (entity.Status == BookingStatus.Cancelled)
+        {
+            return ApiProblem.Create(409, "Conflict", "Запись уже отменена.");
+        }
+
+        // Слот освобождается: дальнейшие availability/создание видят только запланированные (T2).
+        await bookings.CancelAsync(entity, CancellationToken.None);
+        return new OkObjectResult(ToDto(entity, entity.EventType!));
+    }
+
     private static Booking ToDto(BookingEntity b, EventTypeEntity type)
     {
         var startWall = MskClock.ToWall(b.StartUtc);

@@ -87,6 +87,9 @@ public sealed class ApiTestApp : IDisposable
             additionalInfo,
         }, Json);
 
+    public Task<HttpResponseMessage> CancelAsync(int bookingId) =>
+        Client.PostAsync($"/api/bookings/{bookingId}/cancel", content: null);
+
     public Task<HttpResponseMessage> CreateEventTypeAsync(string name, int durationMinutes, string? description = null) =>
         Client.PostAsJsonAsync("/api/event-types", new { name, description, durationMinutes }, Json);
 }

@@ -65,7 +65,7 @@ public sealed class EventTypesImplementation(
 
         // Сетка стартов: якорь 09:00, фиксированный шаг 30 минут; слот предлагается,
         // если start+D <= 18:00 и start > now (T3/T4).
-        var existing = await bookings.ListAllWithTypesAsync(CancellationToken.None);
+        var existing = await bookings.ListScheduledWithTypesAsync(CancellationToken.None);
         var starts = new List<string>();
         for (var start = day.DayStart(); start.AddMinutes(type.DurationMinutes) <= day.DayEnd(); start = start.AddMinutes(BookingWindow.SlotStepMinutes))
         {
