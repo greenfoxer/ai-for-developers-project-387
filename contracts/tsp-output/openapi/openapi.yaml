@@ -47,7 +47,7 @@ paths:
               $ref: '#/components/schemas/NewBooking'
     get:
       operationId: Bookings_upcoming
-      description: 'Предстоящие встречи всех типов одним списком: старт строго после now (MSK), по возрастанию старта, без пагинации (T7).'
+      description: 'Предстоящие встречи всех типов одним списком: старт строго после now (MSK), по возрастанию старта, без пагинации (T7); отменённые не входят.'
       parameters: []
       responses:
         '200':
@@ -58,6 +58,54 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Booking'
+      tags:
+        - Bookings
+  /api/bookings/cancelled:
+    get:
+      operationId: Bookings_cancelled
+      description: 'Отменённые встречи всех типов одним списком: по возрастанию старта, без пагинации.'
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Booking'
+      tags:
+        - Bookings
+  /api/bookings/{id}/cancel:
+    post:
+      operationId: Bookings_cancel
+      description: 'Отменить запланированную встречу: слот снова становится доступным для записи, встреча попадает в список отменённых. Нет такой записи — 404; уже отменена — 409.'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
       tags:
         - Bookings
   /api/event-types:

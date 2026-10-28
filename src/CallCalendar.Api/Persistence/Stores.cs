@@ -19,11 +19,20 @@ public interface IEventTypeStore
 /// Стор записей (T1).
 public interface IBookingStore
 {
-    /// Предстоящие: старт строго после now, по возрастанию (T7).
+    /// Предстоящие запланированные: старт строго после now, по возрастанию (T7); отменённые не входят.
     Task<List<BookingEntity>> ListUpcomingAsync(DateTime nowUtc, CancellationToken ct);
 
-    /// Все записи с типами — для расчёта свободы слотов (T2/T4).
-    Task<List<BookingEntity>> ListAllWithTypesAsync(CancellationToken ct);
+    /// Отменённые с типами — для списка на панели владельца; по возрастанию старта.
+    Task<List<BookingEntity>> ListCancelledAsync(CancellationToken ct);
+
+    /// Запланированные записи с типами — для расчёта свободы слотов (T2/T4); отменённые слот не держат.
+    Task<List<BookingEntity>> ListScheduledWithTypesAsync(CancellationToken ct);
+
+    /// Поиск записи с типом (tracked) — для отмены.
+    Task<BookingEntity?> FindWithTypeAsync(int id, CancellationToken ct);
+
+    /// Отмена запланированной записи: статус Cancelled + сохранение; слот освобождается (T2).
+    Task CancelAsync(BookingEntity booking, CancellationToken ct);
 
     /// Создание с проверкой пересечения в транзакции (T2): null = конфликт (гонка проигравшего -> 409).
     Task<BookingEntity?> TryCreateIfFreeAsync(BookingEntity booking, DateTime endUtc, CancellationToken ct);
@@ -58,18 +67,37 @@ public sealed class BookingStore(CallCalendarDbContext db) : IBookingStore
 {
     public Task<List<BookingEntity>> ListUpcomingAsync(DateTime nowUtc, CancellationToken ct) =>
         db.Bookings.AsNoTracking().Include(b => b.EventType)
-            .Where(b => b.StartUtc > nowUtc)
+            .Where(b => b.Status == BookingStatus.Scheduled && b.StartUtc > nowUtc)
             .OrderBy(b => b.StartUtc)
             .ToListAsync(ct);
 
-    public Task<List<BookingEntity>> ListAllWithTypesAsync(CancellationToken ct) =>
-        db.Bookings.AsNoTracking().Include(b => b.EventType).ToListAsync(ct);
+    public Task<List<BookingEntity>> ListCancelledAsync(CancellationToken ct) =>
+        db.Bookings.AsNoTracking().Include(b => b.EventType)
+            .Where(b => b.Status == BookingStatus.Cancelled)
+            .OrderBy(b => b.StartUtc)
+            .ToListAsync(ct);
+
+    public Task<List<BookingEntity>> ListScheduledWithTypesAsync(CancellationToken ct) =>
+        db.Bookings.AsNoTracking().Include(b => b.EventType)
+            .Where(b => b.Status == BookingStatus.Scheduled)
+            .ToListAsync(ct);
+
+    public Task<BookingEntity?> FindWithTypeAsync(int id, CancellationToken ct) =>
+        db.Bookings.Include(b => b.EventType).FirstOrDefaultAsync(b => b.Id == id, ct);
+
+    public async Task CancelAsync(BookingEntity booking, CancellationToken ct)
+    {
+        booking.Status = BookingStatus.Cancelled;
+        await db.SaveChangesAsync(ct);
+    }
 
     public async Task<BookingEntity?> TryCreateIfFreeAsync(BookingEntity booking, DateTime endUtc, CancellationToken ct)
     {
         // SQLite сериализует писателей; проверка внутри транзакции записи (T2).
         using var tx = await db.Database.BeginTransactionAsync(ct);
-        var existing = await db.Bookings.Include(b => b.EventType).ToListAsync(ct);
+        var existing = await db.Bookings.Include(b => b.EventType)
+            .Where(b => b.Status == BookingStatus.Scheduled)
+            .ToListAsync(ct);
         var conflict = existing.Any(b =>
         {
             var bEnd = b.StartUtc.AddMinutes(b.EventType!.DurationMinutes);

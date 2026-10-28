@@ -80,6 +80,10 @@
 
             <section class="admin-block">
                 <h2>Предстоящие события</h2>
+                @if (cancelError is not null)
+                {
+                    <div class="notice"><p>@cancelError</p></div>
+                }
                 @if (bookings is null)
                 {
                     <p class="muted">Загрузка…</p>
@@ -92,6 +96,38 @@
                 {
                     <ul class="events-list">
                         @foreach (var b in bookings)
+                        {
+                            <li>
+                                <span class="event-when">@b.Start — @b.End</span>
+                                <span class="event-what">@b.EventTypeName</span>
+                                <span class="event-who">@b.Name (@b.Email)</span>
+                                @if (!string.IsNullOrWhiteSpace(b.AdditionalInfo))
+                                {
+                                    <span class="event-note">«@b.AdditionalInfo»</span>
+                                }
+                                <button class="cancel-btn" disabled="@(cancellingId is not null)" @onclick="() => CancelBookingAsync(b)">
+                                    @(cancellingId == b.Id ? "Отменяю…" : "Отменить")
+                                </button>
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
+
+            <section class="admin-block">
+                <h2>Отменённые события</h2>
+                @if (cancelled is null)
+                {
+                    <p class="muted">Загрузка…</p>
+                }
+                else if (cancelled.Count == 0)
+                {
+                    <div class="stub-card"><p>Отменённых событий нет.</p></div>
+                }
+                else
+                {
+                    <ul class="events-list cancelled-list">
+                        @foreach (var b in cancelled)
                         {
                             <li>
                                 <span class="event-when">@b.Start — @b.End</span>
@@ -116,6 +152,9 @@
     private string? apiUnavailable;
     private List<EventType>? types;
     private List<CallCalendar.Client.Models.Booking>? bookings;
+    private List<CallCalendar.Client.Models.Booking>? cancelled;
+    private int? cancellingId;
+    private string? cancelError;
     private string formName = "";
     private string? formDescription;
     private string? nameError;
@@ -141,6 +180,53 @@
     {
         types = await Api.Api.EventTypes.GetAsync();
         bookings = await Api.Api.Bookings.GetAsync();
+        cancelled = await Api.Api.Bookings.Cancelled.GetAsync();
+    }
+
+    /// Отмена записи: слот освобождается на сервере, здесь встреча локально переезжает
+    /// из предстоящих в отменённые (полный перезапрос не нужен).
+    private async Task CancelBookingAsync(CallCalendar.Client.Models.Booking booking)
+    {
+        // защита от реэнтеранса: disabled применяется после render-раунда
+        if (cancellingId is not null)
+        {
+            return;
+        }
+
+        cancellingId = booking.Id;
+        cancelError = null;
+        try
+        {
+            var updated = await Api.Api.Bookings[booking.Id!.Value].Cancel.PostAsync();
+            bookings ??= [];
+            bookings.Remove(booking);
+            cancelled ??= [];
+            cancelled.Add(updated!);
+            // Start — wall-clock строка «yyyy-MM-ddTHH:mm», порядок строк совпадает с хронологией.
+            cancelled = cancelled.OrderBy(b => b.Start, StringComparer.Ordinal).ToList();
+        }
+        catch (ProblemDetails ex) when (ex.ResponseStatusCode == 404 || ex.ResponseStatusCode == 409)
+        {
+            // Состояние на сервере изменилось (запись уже отменена в другой сессии) — перечитываем списки.
+            cancelError = string.IsNullOrWhiteSpace(ex.Detail) ? "Состояние записи изменилось — списки обновлены." : ex.Detail;
+            try
+            {
+                bookings = await Api.Api.Bookings.GetAsync();
+                cancelled = await Api.Api.Bookings.Cancelled.GetAsync();
+            }
+            catch (Exception)
+            {
+                apiUnavailable = UnavailableMessage;
+            }
+        }
+        catch (Exception)
+        {
+            cancelError = UnavailableMessage;
+        }
+        finally
+        {
+            cancellingId = null;
+        }
     }
 
     private async Task SaveTypeAsync()
