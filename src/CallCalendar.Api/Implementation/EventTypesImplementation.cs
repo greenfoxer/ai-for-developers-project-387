@@ -57,11 +57,17 @@ public sealed class EventTypesImplementation(
         var day = date.Date; // календарный день запроса (wall-clock MSK, T8 Q2)
         var now = MskClock.NowWall();
 
-        // Сетка стартов: якорь 09:00, шаг = durationMinutes; слот предлагается,
-        // если start+D <= 18:00 и start > now (T3/T4). Верхней границы окна нет (#4).
+        // Окно записи — 14 календарных дней с сегодняшнего; вне окна слотов нет (T3).
+        if (day < now.Date || day > now.LastWindowDay())
+        {
+            return new OkObjectResult(Array.Empty<string>());
+        }
+
+        // Сетка стартов: якорь 09:00, фиксированный шаг 30 минут; слот предлагается,
+        // если start+D <= 18:00 и start > now (T3/T4).
         var existing = await bookings.ListAllWithTypesAsync(CancellationToken.None);
         var starts = new List<string>();
-        for (var start = day.DayStart(); start.AddMinutes(type.DurationMinutes) <= day.DayEnd(); start = start.AddMinutes(type.DurationMinutes))
+        for (var start = day.DayStart(); start.AddMinutes(type.DurationMinutes) <= day.DayEnd(); start = start.AddMinutes(BookingWindow.SlotStepMinutes))
         {
             if (start <= now)
             {

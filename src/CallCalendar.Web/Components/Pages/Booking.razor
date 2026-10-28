@@ -130,7 +130,7 @@
                                     {
                                         <button type="button"
                                                 class="day @(cell.Value.Date == today ? "today" : "") @(cell.Value.Date == selectedDay.Date ? "selected" : "")"
-                                                disabled="@IsPast(cell.Value)"
+                                                disabled="@(IsPast(cell.Value) || IsBeyondWindow(cell.Value))"
                                                 @onclick="() => ChooseDateAsync(cell.Value)">
                                             <span>@cell.Value.Day</span>
                                         </button>
@@ -189,6 +189,9 @@
     }
 
     private const string UnavailableMessage = "Сервис записи временно недоступен. Попробуйте позже.";
+
+    /// Окно записи — 14 календарных дней с сегодняшнего; дни дальше в календаре недоступны (T3).
+    private const int WindowDays = 14;
 
     private static readonly string[] weekdayNames = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"];
 
@@ -267,6 +270,8 @@
     }
 
     private bool IsPast(DateTime day) => day.Date < today;
+
+    private bool IsBeyondWindow(DateTime day) => day.Date > today.AddDays(WindowDays - 1);
 
     private void PrevMonth() => displayedMonth = displayedMonth.AddMonths(-1);
 

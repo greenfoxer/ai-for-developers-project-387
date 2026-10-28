@@ -2,31 +2,48 @@ using System.Net;
 
 namespace CallCalendar.Api.Tests;
 
-/// Окно записи (T3): прошедшие старты отсекаются строго после now (MSK); выходные не исключаются.
-/// Верхней границы окна (14 дней) больше нет (#4): запись доступна и на далёкие будущие даты.
+/// Окно записи (T3): 14 календарных дней с сегодняшнего; прошедшие старты отсекаются
+/// строго после now (MSK); выходные не исключаются; вне окна слотов нет и запись — 400.
 public class BookingWindowTests
 {
     [Fact]
-    public async Task Far_future_day_is_within_window()
+    public async Task Last_day_of_window_offers_slots()
     {
         using var app = new ApiTestApp();
 
-        var slots = await app.AvailabilityAsync(ApiTestApp.ThirtyMinTypeId, ApiTestApp.Day(30));
+        var slots = await app.AvailabilityAsync(ApiTestApp.ThirtyMinTypeId, ApiTestApp.Day(13));
 
         Assert.NotEmpty(slots);
     }
 
     [Fact]
-    public async Task Far_future_booking_is_accepted()
+    public async Task Booking_on_last_day_of_window_is_accepted()
     {
-        // Arrange
         using var app = new ApiTestApp();
 
-        // Act
-        var response = await app.BookAsync(ApiTestApp.ThirtyMinTypeId, ApiTestApp.Day(30), 10, 0);
+        var response = await app.BookAsync(ApiTestApp.ThirtyMinTypeId, ApiTestApp.Day(13), 10, 0);
 
-        // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Day_beyond_window_offers_nothing()
+    {
+        using var app = new ApiTestApp();
+
+        var slots = await app.AvailabilityAsync(ApiTestApp.ThirtyMinTypeId, ApiTestApp.Day(14));
+
+        Assert.Empty(slots);
+    }
+
+    [Fact]
+    public async Task Booking_beyond_window_is_rejected_with_400()
+    {
+        using var app = new ApiTestApp();
+
+        var response = await app.BookAsync(ApiTestApp.ThirtyMinTypeId, ApiTestApp.Day(14), 10, 0);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]

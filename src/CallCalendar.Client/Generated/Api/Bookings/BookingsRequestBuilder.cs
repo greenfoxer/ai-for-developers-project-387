@@ -53,7 +53,7 @@ namespace CallCalendar.Client.Api.Bookings
             return collectionResult?.AsList();
         }
         /// <summary>
-        /// Создать запись (T6/T8). Старт вне сетки/рабочих часов или некорректные поля — 400; нет такого типа — 404; слот занят (пересечение T2) — 409.
+        /// Создать запись (T6/T8). Старт вне 30-минутной сетки/рабочих часов/окна 14 дней или некорректные поля — 400; нет такого типа — 404; слот занят (пересечение T2) — 409.
         /// </summary>
         /// <returns>A <see cref="global::CallCalendar.Client.Models.Booking"/></returns>
         /// <param name="body">The request body</param>
@@ -101,7 +101,7 @@ namespace CallCalendar.Client.Api.Bookings
             return requestInfo;
         }
         /// <summary>
-        /// Создать запись (T6/T8). Старт вне сетки/рабочих часов или некорректные поля — 400; нет такого типа — 404; слот занят (пересечение T2) — 409.
+        /// Создать запись (T6/T8). Старт вне 30-минутной сетки/рабочих часов/окна 14 дней или некорректные поля — 400; нет такого типа — 404; слот занят (пересечение T2) — 409.
         /// </summary>
         /// <returns>A <see cref="RequestInformation"/></returns>
         /// <param name="body">The request body</param>

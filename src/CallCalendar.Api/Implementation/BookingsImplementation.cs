@@ -34,16 +34,18 @@ public sealed class BookingsImplementation(
             return ApiProblem.Create(404, "Not found", $"Тип события {body.EventTypeId} не найден.");
         }
 
-        // Старт обязан быть на сетке типа, в рабочем дне, строго после now (T3/T4) — иначе 400 (T8).
+        // Старт обязан быть на 30-минутной сетке, в рабочем дне, в окне 14 дней, строго после now (T3/T4) — иначе 400 (T8).
         var now = MskClock.NowWall();
         var day = startWall.Date;
+        var inWindow = day >= now.Date && day <= now.LastWindowDay();
         var onGrid = startWall >= day.DayStart()
             && startWall.AddMinutes(type.DurationMinutes) <= day.DayEnd()
-            && (startWall - day.DayStart()).TotalMinutes % type.DurationMinutes == 0
-            && startWall > now;
+            && (startWall - day.DayStart()).TotalMinutes % BookingWindow.SlotStepMinutes == 0
+            && startWall > now
+            && inWindow;
         if (!onGrid)
         {
-            return ApiProblem.Create(400, "Validation error", "start вне сетки слотов или рабочего дня (T3/T4).");
+            return ApiProblem.Create(400, "Validation error", "start вне сетки слотов, рабочего дня или окна записи (T3/T4).");
         }
 
         var startUtc = MskClock.ToUtc(startWall);
