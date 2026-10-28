@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.0](https://github.com/greenfoxer/ai-for-developers-project-387/compare/v1.1.0...v1.2.0) (2026-10-28)
+
+
+### Features
+
+* apply booking-window delta from project 386 ([45730c4](https://github.com/greenfoxer/ai-for-developers-project-387/commit/45730c4969bbd8017dff27482e029431c84bb7fc))
+* apply booking-window delta from project 386 ([e89b7b9](https://github.com/greenfoxer/ai-for-developers-project-387/commit/e89b7b9ece1e33d90a4c97e411a7f953c8b60f61))
+* cancel scheduled bookings and list cancelled events on owner panel ([4d83d52](https://github.com/greenfoxer/ai-for-developers-project-387/commit/4d83d52449ec255bdeef3bec0ad40a22e4f419a3))
+
 ## [1.1.0](https://github.com/greenfoxer/ai-for-developers-project-387/compare/v1.0.0...v1.1.0) (2026-10-24)
 
 
