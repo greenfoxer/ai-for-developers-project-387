@@ -25,7 +25,7 @@ jobs:
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
         with:
-          model: opencode/mimo-v2.6-flash-free
+          model: opencode/mimo-v2.6-flash
           share: "true"
           prompt: |
             Ты триажишь новую задачу в репозитории CallCalendar

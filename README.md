@@ -36,10 +36,10 @@ cd ai-for-developers-project-387
 
 | Воркфлоу | Чем запускается | Модель | Зачем |
 |---|---|---|---|
-| `opencode.yml` | комментарий с `/opencode` или `/oc` в issue или PR | `opencode/mimo-v2.6-flash-free` | интерактивный вызов: исследовать, исправить, сделать PR |
-| `opencode-triage.yml` | создан issue | `opencode/mimo-v2.6-flash-free` | разбор новой задачи и постановка без правок кода |
-| `opencode-review.yml` | PR opened / synchronize / reopened / ready_for_review | `opencode/mimo-v2.6-flash-free` | авторевью без правок — только комментарии |
-| `scheduled-audit.yml` | cron `0 3 * * *` и вручную через workflow_dispatch | `opencode/mimo-v2.6-flash-free` | плановая проверка Lighthouse, результат в issue |
+| `opencode.yml` | комментарий с `/opencode` или `/oc` в issue или PR | `opencode/mimo-v2.6-flash` | интерактивный вызов: исследовать, исправить, сделать PR |
+| `opencode-triage.yml` | создан issue | `opencode/mimo-v2.6-flash` | разбор новой задачи и постановка без правок кода |
+| `opencode-review.yml` | PR opened / synchronize / reopened / ready_for_review | `opencode/mimo-v2.6-flash` | авторевью без правок — только комментарии |
+| `scheduled-audit.yml` | cron `0 3 * * *` и вручную через workflow_dispatch | `opencode/mimo-v2.6-flash` | плановая проверка Lighthouse, результат в issue |
 
 Везде одна модель: задачи проекта укладываются в её возможности, дешёвый
 вариант здесь не выигрывает по деньгам заметно, а предсказуемость выше —
