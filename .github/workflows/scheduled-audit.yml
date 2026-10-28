@@ -6,10 +6,14 @@ on:
       timezone: Europe/Moscow
   workflow_dispatch:
 
-permissions: {}
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
 
 env:
-  TARGET_URL: https://ai-for-developers-project-386-production-af88.up.railway.app
+  TARGET_URL: ${{ vars.LIGHTHOUSE_TARGET_URL }}
 
 jobs:
   audit:
@@ -51,9 +55,6 @@ jobs:
     if: |
       github.event_name == 'schedule' ||
       !endsWith(github.actor, '[bot]')
-    permissions:
-      contents: read
-      issues: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -94,7 +95,7 @@ jobs:
             - *.html — визуальный отчёт;
             - manifest.json — список прогонов.
 
-            Проверяемая ссылка: https://ai-for-developers-project-386-production-af88.up.railway.app
+            Проверяемая ссылка: ${{ vars.LIGHTHOUSE_TARGET_URL }}
             Прогон Actions: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
             План проверки запускается по расписанию, поэтому ответить
