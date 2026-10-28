@@ -82,7 +82,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          model: opencode/deepseek-v4-pro
+          model: opencode/mimo-v2.6-flash-free
           share: "true"
           use_github_token: true
           prompt: |
