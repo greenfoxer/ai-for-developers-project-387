@@ -13,7 +13,7 @@ permissions:
   id-token: write
 
 env:
-  TARGET_URL: ${{ vars.LIGHTHOUSE_TARGET_URL }}
+  TARGET_URL: ${{ secrets.LIGHTHOUSE_TARGET_URL }}
 
 jobs:
   audit:
@@ -28,6 +28,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: Validate target URL
+        run: |
+          if [ -z "${TARGET_URL}" ]; then
+            echo "::error::LIGHTHOUSE_TARGET_URL is empty. Set the repository secret."
+            exit 1
+          fi
 
       - name: Run Lighthouse
         env:
@@ -45,7 +52,7 @@ jobs:
         with:
           name: lighthouse-report
           path: ./lhci-report
-          if-no-files-found: warn
+          if-no-files-found: error
 
   analyze:
     name: Analyze report and create issue
@@ -73,6 +80,112 @@ jobs:
           name: lighthouse-report
           path: ./lhci-report
 
+      - name: Detect duplicate report
+        id: detect
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          REPORT=""
+          for f in ./lhci-report/*.json; do
+            [ -e "$f" ] || continue
+            if [ "$(basename "$f")" = "manifest.json" ]; then
+              continue
+            fi
+            if jq -e '.audits' "$f" >/dev/null 2>&1; then
+              REPORT="$f"
+              break
+            fi
+          done
+
+          if [ -z "$REPORT" ]; then
+            echo "::error::Lighthouse report JSON not found in ./lhci-report"
+            exit 1
+          fi
+
+          URL=$(jq -r '.finalUrl // .requestedUrl // empty' "$REPORT")
+          if [ -z "$URL" ]; then
+            echo "::error::Cannot determine URL from $REPORT"
+            exit 1
+          fi
+
+          AUDITS=$(jq -r '
+            [.audits
+             | to_entries[]
+             | select(.key | endswith("-insight") | not)
+             | select(.value.score != null and .value.score < 1)
+             | select(.value.scoreDisplayMode != "notApplicable"
+                      and .value.scoreDisplayMode != "informative"
+                      and .value.scoreDisplayMode != "manual")
+             | .key]
+            | sort
+            | join(",")
+          ' "$REPORT")
+
+          FINGERPRINT=$(printf '%s\n%s' "$URL" "$AUDITS" | sha256sum | cut -d' ' -f1)
+
+          ISSUES=$(gh issue list \
+            --state open \
+            --search 'Плановая проверка Lighthouse in:title' \
+            --json number,body,createdAt \
+            --limit 100)
+
+          DUPLICATE_ISSUE=""
+          DUPLICATE_REASON=""
+          NEW_AUDITS=""
+
+          MATCH=$(printf '%s' "$ISSUES" | jq -r --arg fp "$FINGERPRINT" '
+            [.[]
+             | select(.body | contains("<!-- lighthouse-fingerprint: " + $fp + " -->"))
+             | .number]
+            | min // empty
+          ')
+
+          if [ -n "$MATCH" ]; then
+            DUPLICATE_ISSUE="$MATCH"
+            DUPLICATE_REASON="fingerprint"
+          fi
+
+          if [ -z "$DUPLICATE_ISSUE" ]; then
+            NEW_AUDITS="$AUDITS"
+            BODIES=$(mktemp)
+            printf '%s' "$ISSUES" | jq -r '.[].body // ""' > "$BODIES"
+
+            UNCOVERED=""
+            while IFS= read -r audit; do
+              [ -z "$audit" ] && continue
+              if ! grep -qF -- "$audit" "$BODIES"; then
+                UNCOVERED="${UNCOVERED:+$UNCOVERED,}$audit"
+              fi
+            done < <(printf '%s' "$AUDITS" | tr ',' '\n')
+
+            rm -f "$BODIES"
+            NEW_AUDITS="$UNCOVERED"
+
+            if [ -z "$UNCOVERED" ]; then
+              DUPLICATE_ISSUE=$(printf '%s' "$ISSUES" | jq -r '
+                sort_by(.createdAt) | reverse | .[0].number // empty
+              ')
+              if [ -n "$DUPLICATE_ISSUE" ]; then
+                DUPLICATE_REASON="coverage"
+              fi
+            fi
+          fi
+
+          {
+            echo "fingerprint=$FINGERPRINT"
+            echo "audits=$AUDITS"
+            echo "duplicate_issue=$DUPLICATE_ISSUE"
+            echo "duplicate_reason=$DUPLICATE_REASON"
+            echo "new_audits=$NEW_AUDITS"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Current audits: $AUDITS"
+          echo "Fingerprint: $FINGERPRINT"
+          echo "Duplicate issue: ${DUPLICATE_ISSUE:-none} (${DUPLICATE_REASON:-none})"
+          echo "New audits: ${NEW_AUDITS:-none}"
+
       - name: Verify worktree is clean
         run: git status --porcelain
 
@@ -82,6 +195,11 @@ jobs:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LIGHTHOUSE_FINGERPRINT: ${{ steps.detect.outputs.fingerprint }}
+          LIGHTHOUSE_AUDITS: ${{ steps.detect.outputs.audits }}
+          LIGHTHOUSE_NEW_AUDITS: ${{ steps.detect.outputs.new_audits }}
+          LIGHTHOUSE_DUPLICATE_ISSUE: ${{ steps.detect.outputs.duplicate_issue }}
+          LIGHTHOUSE_DUPLICATE_REASON: ${{ steps.detect.outputs.duplicate_reason }}
         with:
           model: opencode-go/kimi-k3
           share: "true"
@@ -95,38 +213,57 @@ jobs:
             - *.html — визуальный отчёт;
             - manifest.json — список прогонов.
 
-            Проверяемая ссылка: ${{ vars.LIGHTHOUSE_TARGET_URL }}
+            Проверяемая ссылка: ${{ env.TARGET_URL }}
             Прогон Actions: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
             План проверки запускается по расписанию, поэтому ответить
             некому — результат обязан остаться в репозитории.
+
+            Шаг Detect duplicate report уже сравнил текущий отчёт с открытыми
+            issue. Не перепроверяй вручную, используй результат в переменных:
+            - LIGHTHOUSE_AUDITS — все проваленные аудиты текущего отчёта;
+            - LIGHTHOUSE_NEW_AUDITS — аудиты, которых ещё нет ни в одном
+              открытом issue;
+            - LIGHTHOUSE_DUPLICATE_ISSUE — номер открытого issue с тем же
+              набором находок (пусто, если дубликата нет);
+            - LIGHTHOUSE_DUPLICATE_REASON — fingerprint или coverage.
 
             1. Прочитай JSON-отчёт: оценки категорий (performance,
                accessibility, best-practices, seo) и проваленные аудиты
                с весом влияния.
             2. Отбери находки, которые реально стоят исправления:
                сначала то, что сильнее всего бьёт по оценкам.
-            3. Прежде чем создавать issue, проверь существующие:
-               gh issue list --state open --search "Плановая проверка Lighthouse"
-               Если открыт такой issue за сегодня — не создавай дубликат,
-               дополни его новым комментарием:
-               gh issue comment <number> --body-file ./lhci-report/issue.md
-               Иначе создай issue с итогами проверки:
-               сначала сохрани тело в ./lhci-report/issue.md, затем
-               gh issue create \
-                 --title "Плановая проверка Lighthouse: <дата>" \
-                 --body-file ./lhci-report/issue.md
-               В теле issue: таблица оценок по категориям, топ находок
-               (аудит, оценка, суть проблемы), рекомендации в порядке
-               приоритета и ссылка на прогон Actions выше.
-               Папка ./lhci-report в .gitignore, поэтому этот файл
-               не сделает рабочее дерево грязным.
-            4. В ответе оставь только ссылку на созданный issue и
-               краткую сводку оценок.
+            3. Действуй по результату дедупликации:
+               - если LIGHTHOUSE_DUPLICATE_ISSUE не пуст — НЕ создавай
+                 новый issue. Сохрани комментарий в ./lhci-report/issue.md
+                 и добавь его:
+                 gh issue comment "$LIGHTHOUSE_DUPLICATE_ISSUE" --body-file ./lhci-report/issue.md
+                 В комментарии: таблица оценок, ссылка на прогон Actions
+                 и фраза, что набор находок совпадает с уже заведённым
+                 issue (новых аудитов нет).
+               - если LIGHTHOUSE_DUPLICATE_ISSUE пуст — создай issue:
+                 сначала сохрани тело в ./lhci-report/issue.md, затем
+                 gh issue create \
+                   --title "Плановая проверка Lighthouse: <дата>" \
+                   --body-file ./lhci-report/issue.md
+                 Если LIGHTHOUSE_NEW_AUDITS не пуст, подробно разбери
+                 только новые аудиты из него, а по остальным кратко
+                 сошлись на уже открытые issue.
+                 В тело issue обязательно добавь скрытые маркеры
+                 (HTML-комментарии) ровно в таком виде:
+                 <!-- lighthouse-fingerprint: ${{ steps.detect.outputs.fingerprint }} -->
+                 <!-- lighthouse-audits: ${{ steps.detect.outputs.audits }} -->
+                 В теле issue: таблица оценок по категориям, топ находок
+                 (аудит, оценка, суть проблемы), рекомендации в порядке
+                 приоритета и ссылка на прогон Actions выше.
+                 Папка ./lhci-report в .gitignore, поэтому этот файл
+                 не сделает рабочее дерево грязным.
+            4. В ответе оставь только ссылку на созданный issue или
+               комментарий и краткую сводку оценок.
 
             Требования:
             - Пиши по-русски, структурированно и без общих слов.
-            - Итоги обязаны быть в issue, а не только в логе прогона.
+            - Итоги обязаны быть в issue/комментарии, а не только в логе прогона.
             - Репозиторий обязан остаться чистым: не изменяй ни одного
               отслеживаемого git'ом файла. Все рабочие файлы сохраняй
               только в ./lhci-report (она в .gitignore).
